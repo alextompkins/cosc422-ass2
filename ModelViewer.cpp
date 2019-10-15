@@ -277,16 +277,22 @@ void transformVertices() {
     for (int meshId = 0; meshId < scene->mNumMeshes; meshId++) {
         aiMesh* mesh = scene->mMeshes[meshId];
 
+        // Declare and initialise sum arrays for vertex blending
+        aiMatrix4x4 vertexSums[mesh->mNumVertices];
+        aiMatrix4x4 normalSums[mesh->mNumVertices];
+        for (int i = 0; i < mesh->mNumVertices; i++) {
+            vertexSums[i] = aiMatrix4x4();
+            normalSums[i] = aiMatrix4x4();
+        }
+
         for (int boneId = 0; boneId < mesh->mNumBones; boneId++) {
             aiBone* bone = mesh->mBones[boneId];
             aiNode* node = scene->mRootNode->FindNode(bone->mName);
-
             aiMatrix4x4 matrixProduct = bone->mOffsetMatrix;
 
-            aiNode* currNode = node;
-            while (currNode != NULL) {
-                matrixProduct = currNode->mTransformation * matrixProduct;
-                currNode = currNode->mParent;
+            while (node != NULL) {
+                matrixProduct = node->mTransformation * matrixProduct;
+                node = node->mParent;
             }
 
             aiMatrix4x4 normalMatrix = aiMatrix4x4(matrixProduct);
@@ -294,12 +300,17 @@ void transformVertices() {
 
             for (int weightId = 0; weightId < bone->mNumWeights; weightId++) {
                 int vertexId = bone->mWeights[weightId].mVertexId;
-                aiVector3D vertex = (initData + meshId)->mVertices[vertexId];
-                aiVector3D normal = (initData + meshId)->mNormals[vertexId];
-
-                mesh->mVertices[vertexId] = matrixProduct * vertex;
-                mesh->mNormals[vertexId] = normalMatrix * normal;
+                vertexSums[vertexId] = vertexSums[vertexId] + matrixProduct * bone->mWeights[weightId].mWeight;
+                normalSums[vertexId] = normalSums[vertexId] + normalMatrix * bone->mWeights[weightId].mWeight;
             }
+        }
+
+        for (int vertexId = 0; vertexId < mesh->mNumVertices; vertexId++) {
+            aiVector3D vertex = (initData + meshId)->mVertices[vertexId];
+            aiVector3D normal = (initData + meshId)->mNormals[vertexId];
+
+            mesh->mVertices[vertexId] = vertexSums[vertexId] * vertex;
+            mesh->mNormals[vertexId] = normalSums[vertexId] * normal;
         }
     }
 }
