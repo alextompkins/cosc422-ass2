@@ -19,11 +19,19 @@ using namespace std;
 #include <assimp/postprocess.h>
 #include "assimp_extras.h"
 
+struct meshInit {
+    int mNumVertices;
+    aiVector3D* mVertices;
+    aiVector3D* mNormals;
+};
+
+meshInit* initData;
+
 //----------Globals----------------------------
 const aiScene *scene = NULL;
 float angle = 0;
 aiVector3D scene_min, scene_max, scene_center;
-bool modelRotn = false;
+bool modelRotn = true;
 std::map<int, int> texIdMap;
 
 int tDuration;  // Animation duration in ticks
@@ -38,14 +46,29 @@ bool twoSidedLight = false;                       //Change to 'true' to enable t
 
 //-------Loads model data from file and creates a scene object----------
 bool loadModel(const char *fileName) {
-    scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_Debone);
+    scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality);
     if (scene == NULL) exit(1);
     printSceneInfo(scene);
 //    printMeshInfo(scene);
 //    printTreeInfo(scene->mRootNode);
 //    printBoneInfo(scene);
 //    printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
+
     tDuration = scene->mAnimations[0]->mDuration;
+    initData = new meshInit[scene->mNumMeshes];
+    for (int meshId = 0; meshId < scene->mNumMeshes; meshId++) {
+        aiMesh* mesh = scene->mMeshes[meshId];
+        meshInit* initDataMesh = (initData + meshId);
+        initDataMesh->mNumVertices = mesh->mNumVertices;
+        initDataMesh->mVertices = new aiVector3D[mesh->mNumVertices];
+        initDataMesh->mNormals = new aiVector3D[mesh->mNumVertices];
+
+        for (int vertId = 0; vertId < mesh->mNumVertices; vertId++) {
+            initDataMesh->mVertices[vertId] = mesh->mVertices[vertId];
+            initDataMesh->mNormals[vertId] = mesh->mNormals[vertId];
+        }
+    }
+
     return true;
 }
 
@@ -251,17 +274,44 @@ void updateNodeMatrices(int tick) {
 }
 
 void transformVertices() {
+    for (int meshId = 0; meshId < scene->mNumMeshes; meshId++) {
+        aiMesh* mesh = scene->mMeshes[meshId];
 
+        for (int boneId = 0; boneId < mesh->mNumBones; boneId++) {
+            aiBone* bone = mesh->mBones[boneId];
+            aiNode* node = scene->mRootNode->FindNode(bone->mName);
+
+            aiMatrix4x4 matrixProduct = bone->mOffsetMatrix;
+
+            aiNode* currNode = node;
+            while (currNode != NULL) {
+                matrixProduct = currNode->mTransformation * matrixProduct;
+                currNode = currNode->mParent;
+            }
+
+            aiMatrix4x4 normalMatrix = aiMatrix4x4(matrixProduct);
+            normalMatrix.Inverse().Transpose();
+
+            for (int weightId = 0; weightId < bone->mNumWeights; weightId++) {
+                int vertexId = bone->mWeights[weightId].mVertexId;
+                aiVector3D vertex = (initData + meshId)->mVertices[vertexId];
+                aiVector3D normal = (initData + meshId)->mNormals[vertexId];
+
+                mesh->mVertices[vertexId] = matrixProduct * vertex;
+                mesh->mNormals[vertexId] = normalMatrix * normal;
+            }
+        }
+    }
 }
 
 //----Timer callback for continuous rotation of the model about y-axis----
 void update(int value) {
     updateNodeMatrices(currTick);
+    transformVertices();
     if (currTick == 0) {
         get_bounding_box(scene, &scene_min, &scene_max);
     }
 
-    cout << "currTick: " << currTick << endl;
     if (currTick >= tDuration) {
         currTick = 0;
     } else {
@@ -290,7 +340,7 @@ void display() {
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 
     glRotatef(angle, 0.f, 1.f, 0.f);  //Continuous rotation about the y-axis
-    if (modelRotn) glRotatef(-90, 1, 0, 0);          //First, rotate the model about x-axis if needed.
+    if (modelRotn) glRotatef(90, 1, 0, 0);          //First, rotate the model about x-axis if needed.
 
     // scale the whole asset to fit into our view frustum
     float tmp = scene_max.x - scene_min.x;
