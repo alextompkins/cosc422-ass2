@@ -38,7 +38,7 @@ if (DevIL_FOUND)
     include_directories(${DevIL_INCLUDE_DIRS})
 endif(DevIL_FOUND)
 
-add_executable(task1 Task1.cpp)
+add_executable(task1 ModelViewer.cpp)
 
 # Link all dependencies
 target_link_libraries(task1 ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${ASSIMP_LIBRARIES} ${IL_LIBRARIES})
