@@ -41,10 +41,10 @@ bool loadModel(const char *fileName) {
     scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_Debone);
     if (scene == NULL) exit(1);
     printSceneInfo(scene);
-    //printMeshInfo(scene);
-    printTreeInfo(scene->mRootNode);
-    //printBoneInfo(scene);
-    //printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
+//    printMeshInfo(scene);
+//    printTreeInfo(scene->mRootNode);
+//    printBoneInfo(scene);
+//    printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
     tDuration = scene->mAnimations[0]->mDuration;
     return true;
 }
@@ -250,20 +250,25 @@ void updateNodeMatrices(int tick) {
     }
 }
 
+void transformVertices() {
+
+}
+
 //----Timer callback for continuous rotation of the model about y-axis----
 void update(int value) {
-    if (currTick < tDuration) {
-
-        updateNodeMatrices(currTick);
-        if (currTick == 0) {
-            get_bounding_box(scene, &scene_min, &scene_max);
-        }
-
-        glutTimerFunc(timeStep, update, 0);
-        currTick++;
-        cout << "currTick: " << currTick << endl;
+    updateNodeMatrices(currTick);
+    if (currTick == 0) {
+        get_bounding_box(scene, &scene_min, &scene_max);
     }
 
+    cout << "currTick: " << currTick << endl;
+    if (currTick >= tDuration) {
+        currTick = 0;
+    } else {
+        currTick++;
+    }
+
+    glutTimerFunc(timeStep, update, 0);
     glutPostRedisplay();
 }
 
