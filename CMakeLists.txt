@@ -38,10 +38,14 @@ if (DevIL_FOUND)
     include_directories(${DevIL_INCLUDE_DIRS})
 endif(DevIL_FOUND)
 
-add_executable(task1 ModelViewer.cpp)
+add_executable(armypilot ArmyPilot.cpp)
+add_executable(mannequin Mannequin.cpp)
+add_executable(dwarf Dwarf.cpp)
 
 # Link all dependencies
-target_link_libraries(task1 ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${ASSIMP_LIBRARIES} ${IL_LIBRARIES})
+target_link_libraries(armypilot ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${ASSIMP_LIBRARIES} ${IL_LIBRARIES})
+target_link_libraries(mannequin ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${ASSIMP_LIBRARIES} ${IL_LIBRARIES})
+target_link_libraries(dwarf ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${ASSIMP_LIBRARIES} ${IL_LIBRARIES})
 
 # Copy resources into binary directory
 file(COPY models DESTINATION ${CMAKE_BINARY_DIR})
