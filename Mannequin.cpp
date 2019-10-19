@@ -40,9 +40,10 @@ struct EyePos {
 } eyePos;
 
 //----------Globals----------------------------
-const aiScene *scene = NULL;
+const aiScene *sceneModel = NULL;
+const aiScene *sceneAnim = NULL;
 aiVector3D scene_min, scene_max, scene_center;
-bool modelRotn = true;
+bool modelRotn = false;
 std::map<int, int> texIdMap;
 
 int tDuration;  // Animation duration in ticks
@@ -57,18 +58,23 @@ bool twoSidedLight = false;                       //Change to 'true' to enable t
 
 //-------Loads model data from file and creates a scene object----------
 bool loadModel(const char *fileName) {
-    scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality);
-    if (scene == NULL) exit(1);
-    printSceneInfo(scene);
-//    printMeshInfo(scene);
-//    printTreeInfo(scene->mRootNode);
-//    printBoneInfo(scene);
-//    printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
+    sceneModel = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality);
+    sceneAnim = aiImportFile("./models/Mannequin/run.fbx", aiProcessPreset_TargetRealtime_MaxQuality);
+    if (sceneModel == NULL || sceneAnim == NULL){
+        cout << "The model file '" << fileName << "' could not be loaded." << endl;
+        exit(1);
+    }
+    printSceneInfo(sceneModel);
+    printSceneInfo(sceneAnim);
+//    printMeshInfo(sceneModel);
+//    printTreeInfo(sceneModel->mRootNode);
+//    printBoneInfo(sceneModel);
+//    printAnimInfo(sceneAnim);  //WARNING:  This may generate a lengthy output if the model has animation data
 
-    tDuration = scene->mAnimations[0]->mDuration;
-    initData = new meshInit[scene->mNumMeshes];
-    for (int meshId = 0; meshId < scene->mNumMeshes; meshId++) {
-        aiMesh* mesh = scene->mMeshes[meshId];
+    tDuration = sceneAnim->mAnimations[0]->mDuration;
+    initData = new meshInit[sceneModel->mNumMeshes];
+    for (int meshId = 0; meshId < sceneModel->mNumMeshes; meshId++) {
+        aiMesh* mesh = sceneModel->mMeshes[meshId];
         meshInit* initDataMesh = (initData + meshId);
         initDataMesh->mNumVertices = mesh->mNumVertices;
         initDataMesh->mVertices = new aiVector3D[mesh->mNumVertices];
@@ -85,7 +91,7 @@ bool loadModel(const char *fileName) {
 
 string makePathRelative(char* path) {
     string filename = strrchr(path, '/');
-    string relative = "./models/ArmyPilot" + filename;
+    string relative = "./models/Mannequin" + filename;
     return relative;
 }
 
@@ -162,7 +168,7 @@ void render(const aiScene *sc, const aiNode *nd) {
     // Draw all meshes assigned to this node
     for (int n = 0; n < nd->mNumMeshes; n++) {
         meshIndex = nd->mMeshes[n];          //Get the mesh indices from the current node
-        mesh = scene->mMeshes[meshIndex];    //Using mesh index, get the mesh object
+        mesh = sceneModel->mMeshes[meshIndex];    //Using mesh index, get the mesh object
 
         materialIndex = mesh->mMaterialIndex;  //Get material index attached to the mesh
 
@@ -251,8 +257,8 @@ void initialise() {
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
     glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50);
     glColor4fv(materialCol);
-    loadModel("./models/ArmyPilot/ArmyPilot.x");            //<<<-------------Specify input file name here
-    loadGLTextures(scene);
+    loadModel("./models/Mannequin/mannequin.fbx");            //<<<-------------Specify input file name here
+    loadGLTextures(sceneModel);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(35, 1, 0.01, 1000.0);
@@ -260,7 +266,7 @@ void initialise() {
 
 void updateNodeMatrices(int tick) {
     int index;
-    aiAnimation* anim = scene->mAnimations[0];
+    aiAnimation* anim = sceneAnim->mAnimations[0];
     aiMatrix4x4 matPos, matRot, matProd;
     aiMatrix3x3 matRot3;
     aiNode* nd;
@@ -271,8 +277,10 @@ void updateNodeMatrices(int tick) {
         aiNodeAnim* ndAnim = anim->mChannels[i];
 
         index = ndAnim->mNumPositionKeys > 1 ? tick : 0;
-        aiVector3D posn = ndAnim->mPositionKeys[index].mValue;
-        matPos.Translation(posn, matPos);
+        if (ndAnim->mNodeName != (aiString) "free3dmodel_skeleton") {
+            aiVector3D posn = ndAnim->mPositionKeys[index].mValue;
+            matPos.Translation(posn, matPos);
+        }
 
         index = ndAnim->mNumRotationKeys > 1 ? tick : 0;
         aiQuaternion rotn = ndAnim->mRotationKeys[index].mValue;
@@ -280,7 +288,7 @@ void updateNodeMatrices(int tick) {
         matRot = aiMatrix4x4(matRot3);
 
         matProd = matPos * matRot;
-        nd = scene->mRootNode->FindNode(ndAnim->mNodeName);
+        nd = sceneAnim->mRootNode->FindNode(ndAnim->mNodeName);
         nd->mTransformation = matProd;
     }
 }
@@ -296,8 +304,8 @@ aiMatrix4x4 addIgnoreIdentity(aiMatrix4x4 m1, aiMatrix4x4 m2) {
 }
 
 void transformVertices() {
-    for (int meshId = 0; meshId < scene->mNumMeshes; meshId++) {
-        aiMesh* mesh = scene->mMeshes[meshId];
+    for (int meshId = 0; meshId < sceneModel->mNumMeshes; meshId++) {
+        aiMesh* mesh = sceneModel->mMeshes[meshId];
 
         // Declare and initialise sum arrays for vertex blending
         aiMatrix4x4 vertexSums[mesh->mNumVertices];
@@ -309,7 +317,7 @@ void transformVertices() {
 
         for (int boneId = 0; boneId < mesh->mNumBones; boneId++) {
             aiBone* bone = mesh->mBones[boneId];
-            aiNode* node = scene->mRootNode->FindNode(bone->mName);
+            aiNode* node = sceneAnim->mRootNode->FindNode(bone->mName);
             aiMatrix4x4 matrixProduct = bone->mOffsetMatrix;
 
             while (node != NULL) {
@@ -346,7 +354,7 @@ void update(int value) {
     updateNodeMatrices(currTick);
     transformVertices();
     if (currTick == 0) {
-        get_bounding_box(scene, &scene_min, &scene_max);
+        get_bounding_box(sceneModel, &scene_min, &scene_max);
     }
 
     if (currTick >= tDuration) {
@@ -455,7 +463,7 @@ void display() {
     // center the model
     glTranslatef(-xc, -yc, -zc);
 
-    render(scene, scene->mRootNode);
+    render(sceneModel, sceneModel->mRootNode);
 
     glutSwapBuffers();
 }
@@ -476,6 +484,7 @@ int main(int argc, char **argv) {
     glutSpecialFunc(special);
     glutMainLoop();
 
-    aiReleaseImport(scene);
+    aiReleaseImport(sceneModel);
+    aiReleaseImport(sceneAnim);
 }
 
