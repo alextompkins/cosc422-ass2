@@ -273,6 +273,16 @@ void updateNodeMatrices(int tick) {
     }
 }
 
+aiMatrix4x4 addIgnoreIdentity(aiMatrix4x4 m1, aiMatrix4x4 m2) {
+    if (m1 == aiMatrix4x4()) {
+        return m2;
+    } else if (m2 == aiMatrix4x4()) {
+        return m1;
+    } else {
+        return m1 + m2;
+    }
+}
+
 void transformVertices() {
     for (int meshId = 0; meshId < scene->mNumMeshes; meshId++) {
         aiMesh* mesh = scene->mMeshes[meshId];
@@ -300,8 +310,12 @@ void transformVertices() {
 
             for (int weightId = 0; weightId < bone->mNumWeights; weightId++) {
                 int vertexId = bone->mWeights[weightId].mVertexId;
-                vertexSums[vertexId] = vertexSums[vertexId] + matrixProduct * bone->mWeights[weightId].mWeight;
-                normalSums[vertexId] = normalSums[vertexId] + normalMatrix * bone->mWeights[weightId].mWeight;
+                vertexSums[vertexId] = addIgnoreIdentity(
+                        vertexSums[vertexId],
+                        matrixProduct * bone->mWeights[weightId].mWeight);
+                normalSums[vertexId] = addIgnoreIdentity(
+                        normalSums[vertexId],
+                        normalMatrix * bone->mWeights[weightId].mWeight);
             }
         }
 
