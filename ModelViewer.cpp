@@ -8,18 +8,18 @@
 //  Press key '1' to toggle 90 degs model rotation about x-axis on/off.
 //  ========================================================================
 
-using namespace std;
-
 #include <iostream>
 #include <map>
 #include <GL/freeglut.h>
 #include <IL/il.h>
+
+using namespace std;
+
 #include <assimp/cimport.h>
 #include <assimp/types.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include "assimp_extras.h"
-
 
 // CONSTANTS
 #define TO_RAD (3.14159265f/180.0f)
@@ -253,7 +253,7 @@ void initialise() {
     loadGLTextures(scene);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(35, 1, 1.0, 1000.0);
+    gluPerspective(35, 1, 0.01, 1000.0);
 }
 
 void updateNodeMatrices(int tick) {
@@ -359,7 +359,7 @@ void update(int value) {
 
 void special(int key, int x, int y) {
     const float CHANGE_VIEW_ANGLE = 2.0;
-    const float RAD_INCR = 1.0;
+    const float RAD_INCR = 0.5;
 
     switch (key) {
         case GLUT_KEY_LEFT:
@@ -393,7 +393,7 @@ void display() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eyePos.rad * sin(eyePos.angle * TO_RAD), eyePos.height, eyePos.rad * cos(eyePos.angle * TO_RAD),
-            0, 0, -5,
+            0, 0, 0,
             0, 1, 0);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 
