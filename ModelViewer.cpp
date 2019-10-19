@@ -23,6 +23,8 @@ using namespace std;
 
 // CONSTANTS
 #define TO_RAD (3.14159265f/180.0f)
+#define FLOOR_SIZE 10
+#define TILE_SIZE 2
 
 struct meshInit {
     int mNumVertices;
@@ -39,7 +41,6 @@ struct EyePos {
 
 //----------Globals----------------------------
 const aiScene *scene = NULL;
-float angle = 0;
 aiVector3D scene_min, scene_max, scene_center;
 bool modelRotn = true;
 std::map<int, int> texIdMap;
@@ -384,6 +385,31 @@ void keyboard(unsigned char key, int x, int y) {
     glutPostRedisplay();
 }
 
+void drawFloor() {
+    bool alternateColour = false;
+
+    glPushMatrix();
+    glTranslatef(0, -0.5, 0);
+    glBegin(GL_QUADS);
+    glNormal3f(0, 1, 0);
+    for (int x = -FLOOR_SIZE; x <= FLOOR_SIZE; x += TILE_SIZE) {
+        for (int z = -FLOOR_SIZE; z <= FLOOR_SIZE; z += TILE_SIZE) {
+            if (alternateColour) {
+                glColor3f(0.6, 1.0, 0.8);
+            } else {
+                glColor3f(0.8, 1.0, 0.6);
+            }
+            glVertex3f(x, 0, z);
+            glVertex3f(x, 0, z + TILE_SIZE);
+            glVertex3f(x + TILE_SIZE, 0, z + TILE_SIZE);
+            glVertex3f(x + TILE_SIZE, 0, z);
+            alternateColour = !alternateColour;
+        }
+    }
+    glEnd();
+    glPopMatrix();
+}
+
 //------The main display function---------
 //----The model is first drawn using a display list so that all GL commands are
 //    stored for subsequent display updates.
@@ -397,7 +423,8 @@ void display() {
             0, 1, 0);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 
-    glRotatef(angle, 0.f, 1.f, 0.f);  //Continuous rotation about the y-axis
+    drawFloor();
+
     if (modelRotn) glRotatef(90, 1, 0, 0);          //First, rotate the model about x-axis if needed.
 
     // scale the whole asset to fit into our view frustum
