@@ -41,6 +41,7 @@ struct EyePos {
 
 //----------Globals----------------------------
 const aiScene *scene = NULL;
+const aiScene *sceneWalk = NULL;
 aiVector3D scene_min, scene_max, scene_center;
 bool modelRotn = false;
 std::map<int, int> texIdMap;
@@ -58,8 +59,13 @@ bool twoSidedLight = false;                       //Change to 'true' to enable t
 //-------Loads model data from file and creates a scene object----------
 bool loadModel(const char *fileName) {
     scene = aiImportFile(fileName, aiProcessPreset_TargetRealtime_MaxQuality);
-    if (scene == NULL) exit(1);
+    sceneWalk = aiImportFile("./models/Dwarf/avatar_walk.bvh", aiProcessPreset_TargetRealtime_MaxQuality);
+    if (scene == NULL || sceneWalk == NULL){
+        cout << "The model file '" << fileName << "' could not be loaded." << endl;
+        exit(1);
+    }
     printSceneInfo(scene);
+    printSceneInfo(sceneWalk);
 //    printMeshInfo(scene);
 //    printTreeInfo(scene->mRootNode);
 //    printBoneInfo(scene);
