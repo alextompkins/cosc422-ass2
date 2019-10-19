@@ -1,31 +1,41 @@
 //  ========================================================================
 //  COSC422: Advanced Computer Graphics;  University of Canterbury (2019)
 //
-//  FILE NAME: BvhLoader.cpp
+//  FILE NAME: ModelViewer.cpp
+//  AUTHOR: Alex Tompkins
+//  Part I of Assignment #2
 //  
 //  Press key '1' to toggle 90 degs model rotation about x-axis on/off.
 //  ========================================================================
+
+using namespace std;
 
 #include <iostream>
 #include <map>
 #include <GL/freeglut.h>
 #include <IL/il.h>
-
-using namespace std;
-
 #include <assimp/cimport.h>
 #include <assimp/types.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include "assimp_extras.h"
 
+
+// CONSTANTS
+#define TO_RAD (3.14159265f/180.0f)
+
 struct meshInit {
     int mNumVertices;
     aiVector3D* mVertices;
     aiVector3D* mNormals;
 };
-
 meshInit* initData;
+
+struct EyePos {
+    float angle = 0.0;
+    float rad = 3.0;
+    float height = 0.5;
+} eyePos;
 
 //----------Globals----------------------------
 const aiScene *scene = NULL;
@@ -347,7 +357,28 @@ void update(int value) {
     glutPostRedisplay();
 }
 
-//----Keyboard callback to toggle initial model orientation---
+void special(int key, int x, int y) {
+    const float CHANGE_VIEW_ANGLE = 2.0;
+    const float RAD_INCR = 1.0;
+
+    switch (key) {
+        case GLUT_KEY_LEFT:
+            eyePos.angle -= CHANGE_VIEW_ANGLE;
+            break;
+        case GLUT_KEY_RIGHT:
+            eyePos.angle += CHANGE_VIEW_ANGLE;
+            break;
+        case GLUT_KEY_UP:
+            eyePos.rad -= RAD_INCR;
+            break;
+        case GLUT_KEY_DOWN:
+            eyePos.rad += RAD_INCR;
+            break;
+    }
+
+    glutPostRedisplay();
+}
+
 void keyboard(unsigned char key, int x, int y) {
     if (key == '1') modelRotn = !modelRotn;   //Enable/disable initial model rotation
     glutPostRedisplay();
@@ -361,7 +392,9 @@ void display() {
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(0, 0, 3, 0, 0, -5, 0, 1, 0);
+    gluLookAt(eyePos.rad * sin(eyePos.angle * TO_RAD), eyePos.height, eyePos.rad * cos(eyePos.angle * TO_RAD),
+            0, 0, -5,
+            0, 1, 0);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 
     glRotatef(angle, 0.f, 1.f, 0.f);  //Continuous rotation about the y-axis
@@ -398,6 +431,7 @@ int main(int argc, char **argv) {
     glutDisplayFunc(display);
     glutTimerFunc(timeStep, update, 0);
     glutKeyboardFunc(keyboard);
+    glutSpecialFunc(special);
     glutMainLoop();
 
     aiReleaseImport(scene);
