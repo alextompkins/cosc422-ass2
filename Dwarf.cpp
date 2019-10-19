@@ -42,7 +42,7 @@ struct EyePos {
 //----------Globals----------------------------
 const aiScene *scene = NULL;
 aiVector3D scene_min, scene_max, scene_center;
-bool modelRotn = true;
+bool modelRotn = false;
 std::map<int, int> texIdMap;
 
 int tDuration;  // Animation duration in ticks
@@ -63,7 +63,7 @@ bool loadModel(const char *fileName) {
 //    printMeshInfo(scene);
 //    printTreeInfo(scene->mRootNode);
 //    printBoneInfo(scene);
-//    printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
+    printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
 
     tDuration = scene->mAnimations[0]->mDuration;
     initData = new meshInit[scene->mNumMeshes];
@@ -84,8 +84,8 @@ bool loadModel(const char *fileName) {
 }
 
 string makePathRelative(char* path) {
-    string filename = strrchr(path, '/');
-    string relative = "./models/ArmyPilot" + filename;
+//    string filename = strrchr(path, '/');
+    string relative = "./models/Dwarf/" + (string) path;
     return relative;
 }
 
@@ -251,7 +251,7 @@ void initialise() {
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
     glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50);
     glColor4fv(materialCol);
-    loadModel("./models/ArmyPilot/ArmyPilot.x");            //<<<-------------Specify input file name here
+    loadModel("./models/Dwarf/dwarf.x");            //<<<-------------Specify input file name here
     loadGLTextures(scene);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
