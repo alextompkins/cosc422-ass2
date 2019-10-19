@@ -63,7 +63,7 @@ bool loadModel(const char *fileName) {
 //    printMeshInfo(scene);
 //    printTreeInfo(scene->mRootNode);
 //    printBoneInfo(scene);
-    printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
+//    printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
 
     tDuration = scene->mAnimations[0]->mDuration;
     initData = new meshInit[scene->mNumMeshes];
@@ -258,8 +258,41 @@ void initialise() {
     gluPerspective(35, 1, 0.01, 1000.0);
 }
 
+aiVector3D findValueForTick(int tick, aiVectorKey *keys, int numKeys) {
+    aiVectorKey key, prevKey;
+    for (int i = 1; i < numKeys; i++) {
+        key = keys[i];
+        prevKey = keys[i - 1];
+        if (prevKey.mTime < tick && tick <= key.mTime) {
+            return key.mValue;
+        }
+    }
+    return keys[0].mValue;
+}
+
+aiQuaternion interpolateRotnKeys(aiQuatKey k1, aiQuatKey k2, int tick) {
+    double factor = (tick - k1.mTime) / (k2.mTime - k1.mTime);
+    aiQuaternion rotn = aiQuaternion();
+    rotn.Interpolate(rotn, k1.mValue, k2.mValue, factor);
+    return rotn;
+}
+
+aiQuaternion findValueForTick(int tick, aiQuatKey *keys, int numKeys) {
+    aiQuatKey key, prevKey;
+    for (int i = 0; i < numKeys; i++) {
+        key = keys[i];
+        if (key.mTime == tick) {
+            return key.mValue;
+        }
+        prevKey = keys[i - 1];
+        if (prevKey.mTime < tick && tick <= key.mTime) {
+            return interpolateRotnKeys(prevKey, key, tick);
+        }
+    }
+    return keys[0].mValue;
+}
+
 void updateNodeMatrices(int tick) {
-    int index;
     aiAnimation* anim = scene->mAnimations[0];
     aiMatrix4x4 matPos, matRot, matProd;
     aiMatrix3x3 matRot3;
@@ -270,12 +303,10 @@ void updateNodeMatrices(int tick) {
         matRot = aiMatrix4x4();
         aiNodeAnim* ndAnim = anim->mChannels[i];
 
-        index = ndAnim->mNumPositionKeys > 1 ? tick : 0;
-        aiVector3D posn = ndAnim->mPositionKeys[index].mValue;
+        aiVector3D posn = findValueForTick(tick, ndAnim->mPositionKeys, ndAnim->mNumPositionKeys);
         matPos.Translation(posn, matPos);
 
-        index = ndAnim->mNumRotationKeys > 1 ? tick : 0;
-        aiQuaternion rotn = ndAnim->mRotationKeys[index].mValue;
+        aiQuaternion rotn = findValueForTick(tick, ndAnim->mRotationKeys, ndAnim->mNumRotationKeys);
         matRot3 = rotn.GetMatrix();
         matRot = aiMatrix4x4(matRot3);
 
