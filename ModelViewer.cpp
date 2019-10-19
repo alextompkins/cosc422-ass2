@@ -381,7 +381,20 @@ void special(int key, int x, int y) {
 }
 
 void keyboard(unsigned char key, int x, int y) {
-    if (key == '1') modelRotn = !modelRotn;   //Enable/disable initial model rotation
+    const float MOVE_DISTANCE = 0.5;
+
+    switch (key) {
+        case '1':
+            modelRotn = !modelRotn;   //Enable/disable initial model rotation
+            break;
+        case ' ':
+            eyePos.height += MOVE_DISTANCE;
+            break;
+        case 'x':
+            eyePos.height -= MOVE_DISTANCE;
+            break;
+    }
+
     glutPostRedisplay();
 }
 
@@ -395,7 +408,7 @@ void drawFloor() {
     for (int x = -FLOOR_SIZE; x <= FLOOR_SIZE; x += TILE_SIZE) {
         for (int z = -FLOOR_SIZE; z <= FLOOR_SIZE; z += TILE_SIZE) {
             if (alternateColour) {
-                glColor3f(0.6, 1.0, 0.8);
+                glColor3f(1.0, 1.0, 1.0);
             } else {
                 glColor3f(0.8, 1.0, 0.6);
             }
