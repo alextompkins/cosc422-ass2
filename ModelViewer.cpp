@@ -24,7 +24,7 @@ using namespace std;
 // CONSTANTS
 #define TO_RAD (3.14159265f/180.0f)
 #define FLOOR_SIZE 10
-#define TILE_SIZE 2
+#define TILE_SIZE 1
 
 struct meshInit {
     int mNumVertices;
@@ -139,6 +139,7 @@ void loadGLTextures(const aiScene *scene) {
             } else {
                 cout << "Couldn't load Image: " << imagePath << endl;
             }
+            glDisable(GL_TEXTURE_2D);
         }
     }  //loop for material
 
@@ -401,6 +402,7 @@ void keyboard(unsigned char key, int x, int y) {
 void drawFloor() {
     bool alternateColour = false;
 
+    glDisable(GL_TEXTURE_2D);
     glPushMatrix();
     glTranslatef(0, -0.5, 0);
     glBegin(GL_QUADS);
@@ -408,9 +410,9 @@ void drawFloor() {
     for (int x = -FLOOR_SIZE; x <= FLOOR_SIZE; x += TILE_SIZE) {
         for (int z = -FLOOR_SIZE; z <= FLOOR_SIZE; z += TILE_SIZE) {
             if (alternateColour) {
-                glColor3f(1.0, 1.0, 1.0);
+                glColor3f(0.6, 0.2, 0.4);
             } else {
-                glColor3f(0.8, 1.0, 0.6);
+                glColor3f(0.8, 0.2, 0.3);
             }
             glVertex3f(x, 0, z);
             glVertex3f(x, 0, z + TILE_SIZE);
