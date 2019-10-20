@@ -58,7 +58,7 @@ aiVector3D scene_min, scene_max, scene_center;
 bool modelRotn = false;
 std::map<int, int> texIdMap;
 
-int tDuration;  // Animation duration in ticks
+int animDuration, walkAnimDuration;  // Animation duration in ticks
 int currTick = 0;
 float timeStep = 50.0;  // Animation time step in ms
 
@@ -76,17 +76,20 @@ bool loadModel(const char *fileName) {
     if (scene == NULL || sceneWalk == NULL){
         cout << "The model file '" << fileName << "' could not be loaded." << endl;
         exit(1);
+    } else {
+        cout << "Model files successfully loaded." << endl;
     }
-    printSceneInfo(scene);
-    printSceneInfo(sceneWalk);
-    printMeshInfo(scene);
-    printMeshInfo(sceneWalk);
+//    printSceneInfo(scene);
+//    printSceneInfo(sceneWalk);
+//    printMeshInfo(scene);
+//    printMeshInfo(sceneWalk);
 //    printTreeInfo(scene->mRootNode);
 //    printBoneInfo(scene);
 //    printBoneInfo(sceneWalk);
 //    printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
 
-    tDuration = scene->mAnimations[0]->mDuration;
+    animDuration = scene->mAnimations[0]->mDuration;
+    walkAnimDuration = sceneWalk->mAnimations[0]->mDuration;
     initData = new meshInit[scene->mNumMeshes];
     for (int meshId = 0; meshId < scene->mNumMeshes; meshId++) {
         aiMesh* mesh = scene->mMeshes[meshId];
@@ -313,17 +316,22 @@ aiQuaternion findValueForTick(int tick, aiQuatKey *keys, int numKeys) {
     return keys[0].mValue;
 }
 
-aiNodeAnim* getRotnAnimNode(aiNodeAnim* targetAnimNode) {
+aiQuaternion getRotation(aiNodeAnim* targetAnimNode, int tick) {
+    aiNodeAnim* rotnAnim;
     aiString name = targetAnimNode->mNodeName;
 
     if (walkEnabled && animNodeMap.find(name.data) != animNodeMap.end()) {
         int channelNum = animNodeMap[name.data];
-        cout << "Found a matching channel for '" << name.data << "': " << channelNum << endl;
-        return sceneWalk->mAnimations[0]->mChannels[channelNum];
+//        cout << "Found a matching channel for '" << name.data << "': " << channelNum << endl;
+        rotnAnim = sceneWalk->mAnimations[0]->mChannels[channelNum];
+        tick = tick % walkAnimDuration + 1;
     } else {
-        cout << "Couldn't find a matching channel for '" << name.data << "', using original animation data." << endl;
-        return targetAnimNode;
+//        cout << "Couldn't find a matching channel for '" << name.data << "', using original animation data." << endl;
+        rotnAnim = targetAnimNode;
+        tick = tick % animDuration + 1;
     }
+
+    return findValueForTick(tick, rotnAnim->mRotationKeys, rotnAnim->mNumRotationKeys);
 }
 
 void updateNodeMatrices(int tick) {
@@ -339,13 +347,12 @@ void updateNodeMatrices(int tick) {
         if (walkEnabled) {
             posn = ndAnim->mPositionKeys[0].mValue;
         } else {
-            posn = findValueForTick(tick, ndAnim->mPositionKeys, ndAnim->mNumPositionKeys);
+            posn = findValueForTick(tick % animDuration + 1, ndAnim->mPositionKeys, ndAnim->mNumPositionKeys);
         }
         matPos = aiMatrix4x4();
         matPos.Translation(posn, matPos);
 
-        aiNodeAnim* rotnAnim = getRotnAnimNode(ndAnim);
-        aiQuaternion rotn = findValueForTick(tick, rotnAnim->mRotationKeys, rotnAnim->mNumRotationKeys);
+        aiQuaternion rotn = getRotation(ndAnim, tick);
         matRot3 = rotn.GetMatrix();
         matRot = aiMatrix4x4(matRot3);
 
@@ -419,12 +426,7 @@ void update(int value) {
         get_bounding_box(scene, &scene_min, &scene_max);
     }
 
-    if (currTick >= tDuration) {
-        currTick = 0;
-    } else {
-        currTick++;
-    }
-
+    currTick++;
     glutTimerFunc(timeStep, update, 0);
     glutPostRedisplay();
 }
