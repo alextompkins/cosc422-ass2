@@ -47,7 +47,7 @@ std::map<int, int> texIdMap;
 
 int tDuration;  // Animation duration in ticks
 int currTick = 0;
-float timeStep = 50.0;  // Animation time step in ms
+float timeStep = 30.0;  // Animation time step in ms
 
 //------------Modify the following as needed----------------------
 float materialCol[4] = {0.5, 0.9, 0.9, 1};   //Default material colour (not used if model's colour is available)
