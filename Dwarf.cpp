@@ -39,6 +39,18 @@ struct EyePos {
     float height = 0.5;
 } eyePos;
 
+map<string, int> animNodeMap = {
+        {"lankle", 17},  // lFoot
+        {"rankle", 20},  // rFoot
+        {"lknee", 16},  // lShin
+        {"rknee", 19},  // rShin
+        {"lhip", 15},  // lThigh
+        {"rhip", 18},  // rThigh
+        {"spine1", 4},  // neck
+        {"spine2", 2},  // chest
+        {"middle", 1},  // abdomen
+};
+
 //----------Globals----------------------------
 const aiScene *scene = NULL;
 const aiScene *sceneWalk = NULL;
@@ -55,6 +67,7 @@ float materialCol[4] = {0.5, 0.9, 0.9, 1};   //Default material colour (not used
 bool replaceCol = false;                       //Change to 'true' to set the model's colour to the above colour
 float lightPosn[4] = {0, 50, 50, 1};         //Default light's position
 bool twoSidedLight = false;                       //Change to 'true' to enable two-sided lighting
+bool walkEnabled = false;
 
 //-------Loads model data from file and creates a scene object----------
 bool loadModel(const char *fileName) {
@@ -66,9 +79,11 @@ bool loadModel(const char *fileName) {
     }
     printSceneInfo(scene);
     printSceneInfo(sceneWalk);
-//    printMeshInfo(scene);
+    printMeshInfo(scene);
+    printMeshInfo(sceneWalk);
 //    printTreeInfo(scene->mRootNode);
 //    printBoneInfo(scene);
+//    printBoneInfo(sceneWalk);
 //    printAnimInfo(scene);  //WARNING:  This may generate a lengthy output if the model has animation data
 
     tDuration = scene->mAnimations[0]->mDuration;
@@ -298,6 +313,19 @@ aiQuaternion findValueForTick(int tick, aiQuatKey *keys, int numKeys) {
     return keys[0].mValue;
 }
 
+aiNodeAnim* getRotnAnimNode(aiNodeAnim* targetAnimNode) {
+    aiString name = targetAnimNode->mNodeName;
+
+    if (walkEnabled && animNodeMap.find(name.data) != animNodeMap.end()) {
+        int channelNum = animNodeMap[name.data];
+        cout << "Found a matching channel for '" << name.data << "': " << channelNum << endl;
+        return sceneWalk->mAnimations[0]->mChannels[channelNum];
+    } else {
+        cout << "Couldn't find a matching channel for '" << name.data << "', using original animation data." << endl;
+        return targetAnimNode;
+    }
+}
+
 void updateNodeMatrices(int tick) {
     aiAnimation* anim = scene->mAnimations[0];
     aiMatrix4x4 matPos, matRot, matProd;
@@ -305,14 +333,19 @@ void updateNodeMatrices(int tick) {
     aiNode* nd;
 
     for (int i = 0; i < anim->mNumChannels; i++) {
-        matPos = aiMatrix4x4();
-        matRot = aiMatrix4x4();
         aiNodeAnim* ndAnim = anim->mChannels[i];
 
-        aiVector3D posn = findValueForTick(tick, ndAnim->mPositionKeys, ndAnim->mNumPositionKeys);
+        aiVector3D posn;
+        if (walkEnabled) {
+            posn = ndAnim->mPositionKeys[0].mValue;
+        } else {
+            posn = findValueForTick(tick, ndAnim->mPositionKeys, ndAnim->mNumPositionKeys);
+        }
+        matPos = aiMatrix4x4();
         matPos.Translation(posn, matPos);
 
-        aiQuaternion rotn = findValueForTick(tick, ndAnim->mRotationKeys, ndAnim->mNumRotationKeys);
+        aiNodeAnim* rotnAnim = getRotnAnimNode(ndAnim);
+        aiQuaternion rotn = findValueForTick(tick, rotnAnim->mRotationKeys, rotnAnim->mNumRotationKeys);
         matRot3 = rotn.GetMatrix();
         matRot = aiMatrix4x4(matRot3);
 
@@ -423,7 +456,10 @@ void keyboard(unsigned char key, int x, int y) {
 
     switch (key) {
         case '1':
-            modelRotn = !modelRotn;   //Enable/disable initial model rotation
+            walkEnabled = false;
+            break;
+        case '2':
+            walkEnabled = true;
             break;
         case ' ':
             eyePos.height += MOVE_DISTANCE;
