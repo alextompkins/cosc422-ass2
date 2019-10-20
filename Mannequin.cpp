@@ -36,7 +36,7 @@ meshInit* initData;
 struct EyePos {
     float angle = 0.0;
     float rad = 3.0;
-    float height = 0.5;
+    float height = 1.0;
 } eyePos;
 
 //----------Globals----------------------------
@@ -53,7 +53,7 @@ float timeStep = 50.0;  // Animation time step in ms
 //------------Modify the following as needed----------------------
 float materialCol[4] = {0.5, 0.9, 0.9, 1};   //Default material colour (not used if model's colour is available)
 bool replaceCol = false;                       //Change to 'true' to set the model's colour to the above colour
-float lightPosn[4] = {0, 50, 50, 1};         //Default light's position
+float lightPosn[4] = {-30, 35, 60, 1};         //Default light's position
 bool twoSidedLight = false;                       //Change to 'true' to enable two-sided lighting
 
 //-------Loads model data from file and creates a scene object----------
@@ -64,8 +64,8 @@ bool loadModel(const char *fileName) {
         cout << "The model file '" << fileName << "' could not be loaded." << endl;
         exit(1);
     }
-    printSceneInfo(sceneModel);
-    printSceneInfo(sceneAnim);
+//    printSceneInfo(sceneModel);
+//    printSceneInfo(sceneAnim);
 //    printMeshInfo(sceneModel);
 //    printTreeInfo(sceneModel->mRootNode);
 //    printBoneInfo(sceneModel);
@@ -152,7 +152,7 @@ void loadGLTextures(const aiScene *scene) {
 }
 
 // ------A recursive function to traverse scene graph and render each mesh----------
-void render(const aiScene *sc, const aiNode *nd) {
+void render(const aiScene *sc, const aiNode *nd, bool isShadow) {
     aiMatrix4x4 m = nd->mTransformation;
     aiMesh *mesh;
     aiFace *face;
@@ -179,7 +179,9 @@ void render(const aiScene *sc, const aiNode *nd) {
         }
 
         mtl = sc->mMaterials[materialIndex];
-        if (replaceCol)
+        if (isShadow)
+            glColor4f(0.1, 0.1, 0.1, 1.0);
+        else if (replaceCol)
             glColor4fv(materialCol);   //User-defined colour
         else if (AI_SUCCESS ==
                  aiGetMaterialColor(mtl, AI_MATKEY_COLOR_DIFFUSE, &diffuse))  //Get material colour from model
@@ -213,10 +215,10 @@ void render(const aiScene *sc, const aiNode *nd) {
             for (int i = 0; i < face->mNumIndices; i++) {
                 int vertexIndex = face->mIndices[i];
 
-                if (mesh->HasTextureCoords(0))
+                if (mesh->HasTextureCoords(0) && !isShadow)
                     glTexCoord2f(mesh->mTextureCoords[0][vertexIndex].x, mesh->mTextureCoords[0][vertexIndex].y);
 
-                if (mesh->HasVertexColors(0))
+                if (mesh->HasVertexColors(0) && !isShadow)
                     glColor4fv((GLfloat *) &mesh->mColors[0][vertexIndex]);
 
                 //Assign texture coordinates here
@@ -233,7 +235,7 @@ void render(const aiScene *sc, const aiNode *nd) {
 
     // Draw all children
     for (int i = 0; i < nd->mNumChildren; i++)
-        render(sc, nd->mChildren[i]);
+        render(sc, nd->mChildren[i], isShadow);
 
     glPopMatrix();
 }
@@ -411,8 +413,6 @@ void drawFloor() {
     bool alternateColour = false;
 
     glDisable(GL_TEXTURE_2D);
-    glPushMatrix();
-    glTranslatef(0, -0.5, 0);
     glBegin(GL_QUADS);
     glNormal3f(0, 1, 0);
     for (int x = -FLOOR_SIZE; x <= FLOOR_SIZE; x += TILE_SIZE) {
@@ -430,7 +430,6 @@ void drawFloor() {
         }
     }
     glEnd();
-    glPopMatrix();
 }
 
 //------The main display function---------
@@ -442,14 +441,27 @@ void display() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(eyePos.rad * sin(eyePos.angle * TO_RAD), eyePos.height, eyePos.rad * cos(eyePos.angle * TO_RAD),
-            0, 0, 0,
+            0, 0.5, 0,
             0, 1, 0);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 
+    glPushMatrix();
     drawFloor();
+    glPopMatrix();
+
+    glDisable(GL_LIGHTING);
+    glPushMatrix();
+
+    glTranslatef(0, 0.01, 0);
+    float shadowMat[16] = {
+            lightPosn[1], 0, 0, 0,
+            -lightPosn[0], 0, -lightPosn[2], -1,
+            0, 0, lightPosn[1], 0,
+            0, 0, 0, lightPosn[1]
+    };
+    glMultMatrixf(shadowMat);
 
     if (modelRotn) glRotatef(90, 1, 0, 0);          //First, rotate the model about x-axis if needed.
-
     // scale the whole asset to fit into our view frustum
     float tmp = scene_max.x - scene_min.x;
     tmp = aisgl_max(scene_max.y - scene_min.y, tmp);
@@ -457,13 +469,22 @@ void display() {
     tmp = 1.f / tmp;
     glScalef(tmp, tmp, tmp);
 
-    float xc = (scene_min.x + scene_max.x) * 0.5;
-    float yc = (scene_min.y + scene_max.y) * 0.5;
-    float zc = (scene_min.z + scene_max.z) * 0.5;
-    // center the model
-    glTranslatef(-xc, -yc, -zc);
+    render(sceneModel, sceneModel->mRootNode, true);
+    glPopMatrix();
 
-    render(sceneModel, sceneModel->mRootNode);
+    glEnable(GL_LIGHTING);
+    glPushMatrix();
+    if (modelRotn) glRotatef(90, 1, 0, 0);          //First, rotate the model about x-axis if needed.
+
+    // scale the whole asset to fit into our view frustum
+    tmp = scene_max.x - scene_min.x;
+    tmp = aisgl_max(scene_max.y - scene_min.y, tmp);
+    tmp = aisgl_max(scene_max.z - scene_min.z, tmp);
+    tmp = 1.f / tmp;
+    glScalef(tmp, tmp, tmp);
+
+    render(sceneModel, sceneModel->mRootNode, false);
+    glPopMatrix();
 
     glutSwapBuffers();
 }

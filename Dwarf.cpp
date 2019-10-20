@@ -520,8 +520,8 @@ void display() {
     // Draw planar shadow
     glDisable(GL_LIGHTING);
     glPushMatrix();
-    glTranslatef(0, 0.01, 0);
 
+    glTranslatef(0, 0.01, 0);
     float shadowMat[16] = {
             lightPosn[1], 0, 0, 0,
             -lightPosn[0], 0, -lightPosn[2], -1,
@@ -529,8 +529,8 @@ void display() {
             0, 0, 0, lightPosn[1]
     };
     glMultMatrixf(shadowMat);
-    if (modelRotn) glRotatef(90, 1, 0, 0);          //First, rotate the model about x-axis if needed.
 
+    if (modelRotn) glRotatef(90, 1, 0, 0);          //First, rotate the model about x-axis if needed.
     // scale the whole asset to fit into our view frustum
     float tmp = scene_max.x - scene_min.x;
     tmp = aisgl_max(scene_max.y - scene_min.y, tmp);
