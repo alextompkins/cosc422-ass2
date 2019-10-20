@@ -53,7 +53,7 @@ float timeStep = 50.0;  // Animation time step in ms
 //------------Modify the following as needed----------------------
 float materialCol[4] = {0.5, 0.9, 0.9, 1};   //Default material colour (not used if model's colour is available)
 bool replaceCol = false;                       //Change to 'true' to set the model's colour to the above colour
-float lightPosn[4] = {-30, 35, 60, 1};         //Default light's position
+float lightPosn[4] = {-30, 45, 60, 1};         //Default light's position
 bool twoSidedLight = false;                       //Change to 'true' to enable two-sided lighting
 
 //-------Loads model data from file and creates a scene object----------
