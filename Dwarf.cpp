@@ -49,6 +49,7 @@ map<string, int> animNodeMap = {
         {"spine1", 4},  // neck
         {"spine2", 2},  // chest
         {"middle", 1},  // abdomen
+        {"neck", 4}  // neck
 };
 
 //----------Globals----------------------------
