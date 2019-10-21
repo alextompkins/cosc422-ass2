@@ -25,6 +25,7 @@ using namespace std;
 #define TO_RAD (3.14159265f/180.0f)
 #define FLOOR_SIZE 10
 #define TILE_SIZE 1
+#define MOVE_SPEED 0.03
 
 struct meshInit {
     int mNumVertices;
@@ -38,6 +39,12 @@ struct EyePos {
     float rad = 3.0;
     float height = 0.5;
 } eyePos;
+
+struct Position {
+    float x = 0;
+    float y = 0;
+    float z = 0;
+} modelPos;
 
 //----------Globals----------------------------
 const aiScene *scene = NULL;
@@ -355,6 +362,11 @@ void update(int value) {
         currTick++;
     }
 
+    modelPos.x += MOVE_SPEED;
+    if (modelPos.x > FLOOR_SIZE + TILE_SIZE) {
+        modelPos.x = 0;
+    }
+
     glutTimerFunc(timeStep, update, 0);
     glutPostRedisplay();
 }
@@ -433,14 +445,15 @@ void display() {
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(eyePos.rad * sin(eyePos.angle * TO_RAD), eyePos.height, eyePos.rad * cos(eyePos.angle * TO_RAD),
-            0, 0, 0,
+    gluLookAt(modelPos.x + eyePos.rad * sin(eyePos.angle * TO_RAD), eyePos.height, modelPos.z + eyePos.rad * cos(eyePos.angle * TO_RAD),
+            modelPos.x, modelPos.y, modelPos.z,
             0, 1, 0);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosn);
 
     drawFloor();
 
     glPushMatrix();
+    glTranslatef(modelPos.x, modelPos.y, modelPos.z);
     glTranslatef(0, -0.06, 0);
     if (modelRotn) glRotatef(90, 1, 0, 0);          //First, rotate the model about x-axis if needed.
 
