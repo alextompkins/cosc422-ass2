@@ -327,11 +327,11 @@ aiQuaternion getRotation(aiNodeAnim* targetAnimNode, int tick) {
         int channelNum = animNodeMap[name.data];
 //        cout << "Found a matching channel for '" << name.data << "': " << channelNum << endl;
         rotnAnim = sceneWalk->mAnimations[0]->mChannels[channelNum];
-        tick = tick % walkAnimDuration + 1;
+        tick = tick % (walkAnimDuration + 1);
     } else {
 //        cout << "Couldn't find a matching channel for '" << name.data << "', using original animation data." << endl;
         rotnAnim = targetAnimNode;
-        tick = tick % animDuration + 1;
+        tick = tick % (animDuration + 1);
     }
 
     return findValueForTick(tick, rotnAnim->mRotationKeys, rotnAnim->mNumRotationKeys);
@@ -350,7 +350,7 @@ void updateNodeMatrices(int tick) {
         if (walkEnabled) {
             posn = ndAnim->mPositionKeys[0].mValue;
         } else {
-            posn = findValueForTick(tick % animDuration + 1, ndAnim->mPositionKeys, ndAnim->mNumPositionKeys);
+            posn = findValueForTick(tick % (animDuration + 1), ndAnim->mPositionKeys, ndAnim->mNumPositionKeys);
         }
         matPos = aiMatrix4x4();
         matPos.Translation(posn, matPos);
