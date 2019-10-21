@@ -364,7 +364,7 @@ void update(int value) {
 
     modelPos.x += MOVE_SPEED;
     if (modelPos.x > FLOOR_SIZE + TILE_SIZE) {
-        modelPos.x = 0;
+        modelPos.x = -FLOOR_SIZE;
     }
 
     glutTimerFunc(timeStep, update, 0);
