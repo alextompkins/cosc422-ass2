@@ -440,6 +440,8 @@ void display() {
 
     drawFloor();
 
+    glPushMatrix();
+    glTranslatef(0, -0.06, 0);
     if (modelRotn) glRotatef(90, 1, 0, 0);          //First, rotate the model about x-axis if needed.
 
     // scale the whole asset to fit into our view frustum
@@ -455,7 +457,9 @@ void display() {
     // center the model
     glTranslatef(-xc, -yc, -zc);
 
+    glRotatef(-13, 0, 1, 0);
     render(scene, scene->mRootNode);
+    glPopMatrix();
 
     glutSwapBuffers();
 }
