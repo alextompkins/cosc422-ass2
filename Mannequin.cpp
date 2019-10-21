@@ -50,7 +50,6 @@ struct Position {
 const aiScene *sceneModel = NULL;
 const aiScene *sceneAnim = NULL;
 aiVector3D scene_min, scene_max, scene_center;
-bool modelRotn = false;
 std::map<int, int> texIdMap;
 
 int tDuration;  // Animation duration in ticks
@@ -407,9 +406,6 @@ void keyboard(unsigned char key, int x, int y) {
     const float MOVE_DISTANCE = 0.5;
 
     switch (key) {
-        case '1':
-            modelRotn = !modelRotn;   //Enable/disable initial model rotation
-            break;
         case ' ':
             eyePos.height += MOVE_DISTANCE;
             break;
@@ -474,7 +470,6 @@ void display() {
     };
     glMultMatrixf(shadowMat);
 
-    if (modelRotn) glRotatef(90, 1, 0, 0);          //First, rotate the model about x-axis if needed.
     // scale the whole asset to fit into our view frustum
     float tmp = scene_max.x - scene_min.x;
     tmp = aisgl_max(scene_max.y - scene_min.y, tmp);
@@ -489,7 +484,6 @@ void display() {
     glPushMatrix();
 
     glTranslatef(modelPos.x, modelPos.y, modelPos.z);
-    if (modelRotn) glRotatef(90, 1, 0, 0);          //First, rotate the model about x-axis if needed.
 
     // scale the whole asset to fit into our view frustum
     tmp = scene_max.x - scene_min.x;
